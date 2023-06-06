@@ -1,0 +1,43 @@
+steps:  
+  - task: replacetokens@5
+    displayName: replace terraform variables
+    inputs:
+      rootDirectory: '$(System.DefaultWorkingDirectory)/terraform2'
+      targetFiles: '*.tf'
+      encoding: 'auto'
+      tokenPattern: 'default'
+      writeBOM: true
+      actionOnMissing: 'warn'
+      keepToken: false
+      actionOnNoFiles: 'continue'
+      enableTransforms: false
+      enableRecursion: false
+      useLegacyPattern: false
+      enableTelemetry: true
+  - task: TerraformTaskV4@4
+    displayName: Terraform Init
+    inputs:
+      provider: 'azurerm'
+      workingDirectory: '$(System.DefaultWorkingDirectory)/terraform2'
+      backendServiceArm: 'Nephos AppDev Subscription(e09d6db0-23cf-467b-8aca-90ad57a233f4)'
+      backendAzureRmResourceGroupName: 'rg-cenkay-0004-prod'
+      backendAzureRmStorageAccountName: 'cenkaysa'
+      backendAzureRmContainerName: 'infra2'
+      backendAzureRmKey: 'terraform2.tfstate'
+  - task: TerraformTaskV2@2
+    displayName: Terraform Plan
+    inputs:
+      provider: 'azurerm'
+      command: 'plan'
+      # commandOptions: -refresh-only
+      workingDirectory: '$(System.DefaultWorkingDirectory)/terraform2'
+      environmentServiceNameAzureRM: 'Nephos AppDev Subscription(e09d6db0-23cf-467b-8aca-90ad57a233f4)'
+  - task: TerraformTaskV4@4
+    displayName: Terraform Apply
+    continueOnError: true
+    inputs:
+      provider: 'azurerm'
+      command: 'apply'
+      # commandOptions: -refresh-only
+      workingDirectory: '$(System.DefaultWorkingDirectory)/terraform2'
+      environmentServiceNameAzureRM: 'Nephos AppDev Subscription(e09d6db0-23cf-467b-8aca-90ad57a233f4)'

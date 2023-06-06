@@ -1,0 +1,42 @@
+variables:
+- template: ../../config-infra-prod.yml
+
+trigger:
+- none
+
+pool:
+  vmImage: ubuntu-20.04
+
+stages:
+- stage: RunTrainingPipeline
+  displayName: Run Training Pipeline
+
+  jobs:
+    - job: DeployDevTrainingPipeline
+      timeoutInMinutes: 120 # how long to run the job before automatically cancelling
+      steps:
+      - checkout: self
+        path: s/
+      - template: /aml-cli-v2/install-az-cli.yml
+
+      - template: /aml-cli-v2/install-aml-cli.yml
+
+      - template: /mlops/azureml/connect/connect-to-workspace.yml
+
+      - template: /aml-cli-v2/register-environment.yml
+        parameters:
+          build_type: conda
+          environment_name: taxi-train-env
+          environment_file: mlops/azureml/train/train-env.yml
+
+      - template: /aml-cli-v2/register-data.yml
+        parameters:
+          data_type: uri_file
+          data_name: taxi-data
+          data_file: mlops/azureml/train/data.yml
+
+      - template: /aml-cli-v2/run-pipeline.yml
+        parameters:
+          pipeline_file: mlops/azureml/train/pipeline.yml
+          experiment_name: $(environment)_taxi_fare_train_$(Build.SourceBranchName)
+          display_name: $(environment)_taxi_fare_run_$(Build.BuildID)

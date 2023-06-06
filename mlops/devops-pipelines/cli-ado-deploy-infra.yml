@@ -1,0 +1,40 @@
+variables:
+- template: ../../config-infra-prod.yml
+
+trigger:
+- none
+
+pool:
+  vmImage: $(ap_vm_image)
+
+stages :
+  - stage: CreateWorkspace
+    displayName: Create Workspace with Resource Group
+    jobs:
+    - job: CreateRGandWorkspace
+      displayName: Create Workspace and Resource Group
+      steps:
+      - checkout: self
+        path: s/
+
+      - template: /aml-cli-v2/install-az-cli.yml
+      - template: /aml-cli-v2/install-aml-cli.yml
+      - template: /infra/create-resource-group.yml
+        parameters:
+          rg_name:  $(resource_group)
+          location: $(location)
+      - template: /infra/create-workspace.yml
+        parameters:
+          rg_name: $(resource_group)
+          workspace_name: $(aml_workspace)
+          location: $(location)
+
+      - template: /aml-cli-v2/connect-to-workspace.yml
+      - template: /aml-cli-v2/create-compute.yml
+        parameters:
+          cluster_name:   $(training_target)
+          size:           $(training_target_sku)
+          min_instances:  ${{ variables.training_target_min_nodes }}
+          max_instances:  ${{ variables.training_target_max_nodes }}
+          cluster_tier:   $(training_target_tier)
+

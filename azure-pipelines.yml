@@ -1,0 +1,57 @@
+trigger:
+- none
+pool:
+  vmimage: ' ubuntu-20.04'
+variables:
+- template: ../config-infra-prod.yml
+    
+stages:
+- stage: RunTrainingPipeline
+  displayName: Run Training Pipeline
+
+  jobs:
+    - job: DeployDevTrainingPipeline
+      timeoutInMinutes: 120 # how long to run the job before automatically cancelling
+      steps:
+      - checkout: self
+        path: s/
+
+      - template: /aml-cli-v2/install-az-cli.yml
+      - template: /aml-cli-v2/install-aml-cli.yml
+      - task: TerraformInstaller@1
+        inputs:
+          terraformVersion: 'latest'
+
+      - task: TerraformTaskV4@4
+        inputs:
+          provider: 'azurerm'
+          command: 'init'
+          workingDirectory: '$(System.DefaultWorkingDirectory)/terraform1'
+          backendServiceArm: 'cenkaycon'
+      - task: TerraformTaskV4@4
+        inputs:
+          provider: 'azurerm'
+          command: 'plan'
+          workingDirectory: '$(System.DefaultWorkingDirectory)/terraform1'
+      - task: TerraformTaskV2@2
+        inputs:
+          provider: 'azurerm'
+          command: 'apply'
+          workingDirectory: '$(System.DefaultWorkingDirectory)/terraform1'
+
+      - template: /aml-cli-v2/connect-to-workspace.yml
+      - task: TerraformTaskV4@4
+        inputs:
+          provider: 'azurerm'
+          command: 'init'
+          workingDirectory: '$(System.DefaultWorkingDirectory)/../terraform2'
+      - task: TerraformTaskV2@2
+        inputs:
+          provider: 'azurerm'
+          command: 'apply'
+          workingDirectory: '$(System.DefaultWorkingDirectory)/../terraform2'
+      - task: TerraformTaskV4@4
+        inputs:
+          provider: 'azurerm'
+          command: 'apply'
+          workingDirectory: '$(System.DefaultWorkingDirectory)/../terraform2'

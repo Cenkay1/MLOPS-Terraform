@@ -1,0 +1,44 @@
+variables:
+- template: ../../config-infra-prod.yml
+- name: endpoint_name
+  value: taxi-online-$(namespace)$(postfix)$(environment)
+- name: endpoint_type
+  value: online
+- name: blue
+- name: green
+trigger:
+- none
+
+pool:
+  vmImage: ubuntu-20.04
+
+stages:
+- stage: CreateOnlineEndpoint
+  displayName: Create/Update Online Endpoint
+  jobs:
+  - deployment: DeployMLOPS
+    environment: 'Deploy ML Model Endpoint Gate'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+            - checkout: self
+              path: s/
+            - template: /aml-cli-v2/install-az-cli.yml
+
+            - template: /aml-cli-v2/install-aml-cli.yml
+
+            - template: /aml-cli-v2/connect-to-workspace.yml
+
+            - template: /aml-cli-v2/create-endpoint.yml
+              parameters:
+                endpoint_file: mlops/azureml/deploy/online/online-endpoint.yml
+
+            - template: /aml-cli-v2/create-blue-green-deployment.yml
+              parameters:
+                deployment_file: mlops/azureml/deploy/online/online-deployment.yml
+            # - template: /aml-cli-v2/test-deployment.yml
+            #   parameters:
+            #     deployment_name: taxi-online-dp
+            #     sample_request: data/taxi-request.json
+            #     request_type: json

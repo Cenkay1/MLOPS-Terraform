@@ -1,0 +1,23 @@
+variables:
+- template: ../../config-infra-prod.yml
+- group: terraform-variable
+
+trigger:
+- none
+
+pool:
+  vmImage: ubuntu-20.04
+
+stages:
+- stage: TFINFRADEPLOY
+  displayName: TFINFRADEPLOY
+  jobs:
+    - job: tfinfradeploy
+      timeoutInMinutes: 120 # how long to run the job before automatically cancelling
+      steps:
+      - checkout: self
+        path: s/
+      - template: /terraform1/tf-buildml.yml
+      - template: /aml-cli-v2/install-aml-cli.yml
+      - template: /aml-cli-v2/connect-to-workspace.yml
+      - template: /terraform2/tf-buildcomputecluster.yml
